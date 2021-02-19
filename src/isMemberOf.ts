@@ -1,4 +1,4 @@
-import github from '@actions/github';
+import { context } from '@actions/github';
 import PQueue from 'p-queue';
 import { catchHandler } from './util/catchHandler';
 import { OctokitClient } from './util/constants';
@@ -13,7 +13,7 @@ export const handleMembership = async (
   isMemberOf: string[] = [],
   requestConcurrency = 2
 ): Promise<boolean> => {
-  const { repo, actor } = github.context;
+  const { repo, actor } = context;
 
   const queue = new PQueue({ concurrency: requestConcurrency });
 
@@ -32,5 +32,7 @@ export const handleMembership = async (
     membershipChecks.map((membership) => queue.add(() => client.teams.getMembershipForUserInOrg(membership)))
   ).catch(catchHandler(debug));
 
-  return (results as Record<string, unknown>[]).some((data: Record<string, unknown>) => data?.status === ACTIVE_STATE);
+  const isMember = results instanceof Array && (results).some(result => result.data.state === ACTIVE_STATE);
+
+  return isMember;
 };
